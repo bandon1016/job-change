@@ -185,6 +185,16 @@
             </Icon>
         );
 
+        const Sword = (props) => (
+            <Icon {...props}>
+                <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" />
+                <line x1="13" y1="19" x2="19" y2="13" />
+                <line x1="16" y1="16" x2="20" y2="20" />
+                <line x1="19" y1="21" x2="20" y2="22" />
+                <line x1="21" y1="19" x2="22" y2="20" />
+            </Icon>
+        );
+
         // --- 資料定義 (移至組件外以便初始化存取) ---
 
         // 轉職技能建議表資料
@@ -278,6 +288,28 @@
                 { name: '狂戰士:上升', rank: '傳說', method: '限時300W(II)', pvp: '買/轉職X', pve: '買/轉職X' },
                 { name: '燃燒之心', rank: '傳說', method: '', pvp: '商城紫', pve: '商城紫' },
                 { name: '海力克斯', rank: '傳說', method: '8,000,000', pvp: '買', pve: '買' },
+            ],
+            divineknight: [
+                // 英雄技能
+                { name: '神聖狂襲(預言)', rank: '英雄', method: '限時180W', pvp: '1', pve: '1', upgraded: true },
+                { name: '神聖十字架(預言)', rank: '英雄', method: '700,000', pvp: '5', pve: '2', upgraded: true },
+                { name: '狂襲Lv.2', rank: '英雄', method: '限時180W', pvp: '2', pve: '3', upgraded: true },
+                { name: '審判(預言)', rank: '英雄', method: '限時180W', pvp: '3', pve: '5', upgraded: true },
+                { name: '神聖保護', rank: '英雄', method: '160,000', pvp: '買', pve: '買' },
+                { name: '團結', rank: '英雄', method: '限時180W', pvp: 'X', pve: 'X' },
+                { name: '混亂Lv.2', rank: '英雄', method: '', pvp: '4', pve: '6' },
+                { name: '神聖恩典', rank: '英雄', method: '', pvp: '6', pve: '4' },
+                { name: '神聖追趕者', rank: '英雄', method: '1,000,000', pvp: '買', pve: '買' },
+                // 傳說技能
+                { name: '神聖衝暈(預言)', rank: '傳說', method: '', pvp: '1', pve: '3', upgraded: true },
+                { name: '混亂Lv.3', rank: '傳說', method: '', pvp: '2', pve: '2', upgraded: true },
+                { name: '神聖回復(預言)', rank: '傳說', method: '2,000,000', pvp: '買', pve: '買', upgraded: true },
+                { name: '神聖追趕者(預言)', rank: '傳說', method: '限時300W(II)', pvp: '4', pve: '4' },
+                { name: '神聖保護(預言)', rank: '傳說', method: '限時300W(II)', pvp: '買/轉職X', pve: '買/轉職X' },
+                { name: '神聖回復(至高)', rank: '傳說', method: '', pvp: '商城紫', pve: '商城紫' },
+                { name: '魔鏡', rank: '傳說', method: '限時300W(I)', pvp: '5', pve: '5' },
+                { name: '狂襲Lv.3', rank: '傳說', method: '限時300W(I)', pvp: '3', pve: '1' },
+                { name: '熾天使', rank: '傳說', method: '8,000,000', pvp: '血盟紫', pve: '血盟紫' },
             ]
         };
 
@@ -301,6 +333,11 @@
                 hero: ['無效區域', '暗黑不死', '暗黑之魂:復仇者', '幽冥防護'],
                 legend1: ['幻覺', '無效區域:復仇者'],
                 legend2: ['黑暗之鏡:復仇者', '復仇屏障:復仇者']
+            },
+            divineknight: {
+                hero: ['神聖狂襲(預言)', '狂襲Lv.2', '審判(預言)', '團結'],
+                legend1: ['魔鏡', '狂襲Lv.3'],
+                legend2: ['神聖保護(預言)', '神聖追趕者(預言)']
             }
         };
 
@@ -356,6 +393,19 @@
                 badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
                 hoverBorder: 'hover:border-sky-300',
                 videoUrl: 'https://www.youtube.com/watch?v=4QFuUfdjCWE'
+            },
+            {
+                id: 'divineknight',
+                name: '神聖劍士',
+                icon: <Sword className="w-6 h-6" />,
+                color: 'text-amber-600',
+                bgColor: 'bg-amber-50',
+                borderColor: 'border-amber-200',
+                gradient: 'from-yellow-500 to-amber-600',
+                lightGradient: 'from-yellow-50 to-amber-50',
+                badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                hoverBorder: 'hover:border-yellow-400',
+                videoUrl: 'https://www.youtube.com/watch?v=oJ30zlqN7E8'
             }
         ];
 
@@ -370,7 +420,8 @@
                     darkknight: { hero: [], legend: [] },
                     thunderer: { hero: [], legend: [] },
                     berserker: { hero: [], legend: [] },
-                    gunner: { hero: [], legend: [] }
+                    gunner: { hero: [], legend: [] },
+                    divineknight: { hero: [], legend: [] }
                 };
 
                 // 遍歷 transferData 找出所有 upgraded 為 true 的技能
@@ -413,10 +464,32 @@
                         }
                     }));
                 } else {
-                    const limit = rankKey === 'hero' ? 6 : 5;
-                    if (currentList.length >= limit) {
-                        alert(`${rank}技能最多只能選擇 ${limit} 個！`);
-                        return;
+                    if (rankKey === 'hero') {
+                        if (currentList.length >= 6) {
+                            alert(`英雄技能最多只能選擇 6 個！`);
+                            return;
+                        }
+                    } else {
+                        // 處理傳說技能細分上限
+                        const skillData = transferData[classId].find(s => s.name === skillName);
+                        const isMall = skillData.pvp.includes('商城紫') || skillData.pve.includes('商城紫');
+                        const isClan = skillData.pvp.includes('血盟紫') || skillData.pve.includes('血盟紫');
+
+                        const counts = currentList.reduce((acc, name) => {
+                            const s = transferData[classId].find(item => item.name === name);
+                            if (s.pvp.includes('商城紫') || s.pve.includes('商城紫')) acc.mall++;
+                            else if (s.pvp.includes('血盟紫') || s.pve.includes('血盟紫')) acc.clan++;
+                            else acc.reg++;
+                            return acc;
+                        }, { reg: 0, mall: 0, clan: 0 });
+
+                        if (isMall) {
+                            if (counts.mall >= 1) { alert('商城紫技能最多只能選擇 1 個！'); return; }
+                        } else if (isClan) {
+                            if (counts.clan >= 1) { alert('血盟紫技能最多只能選擇 1 個！'); return; }
+                        } else {
+                            if (counts.reg >= 5) { alert('一般傳說技能最多只能選擇 5 個！'); return; }
+                        }
                     }
 
                     setSelections(prev => ({
@@ -434,7 +507,8 @@
                 darkknight: null,
                 thunderer: null,
                 berserker: null,
-                gunner: null
+                gunner: null,
+                divineknight: null
             });
 
             const handleToggleOrientation = (classId, type) => {
@@ -583,7 +657,7 @@
                     const selectionOrder = isSelected ? selectionList.indexOf(row.name) + 1 : null;
 
                     // 檢查是否標示為轉職X
-                    const isTransferDisabled = (row.pvp && row.pvp.includes('轉職X')) || (row.pve && row.pve.includes('轉職X'));
+                    const isTransferDisabled = (row.pvp && row.pvp.includes('X')) || (row.pve && row.pve.includes('X'));
 
                     let rowBgClass = '';
                     if (isSelected) {
@@ -676,14 +750,34 @@
                             </div>
 
                             <div className="flex flex-col items-end gap-2">
-                                <div className="flex gap-4 text-sm font-bold">
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] md:text-sm font-bold justify-end">
                                     <div className={`flex items-center gap-1 ${heroCount >= 6 ? 'text-red-600' : 'text-slate-500'}`}>
                                         <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
                                         英雄: {heroCount}/6
                                     </div>
-                                    <div className={`flex items-center gap-1 ${legendCount >= 5 ? 'text-purple-600' : 'text-slate-500'}`}>
+                                    <div className={`flex items-center gap-1 text-slate-500`}>
                                         <span className="w-2 h-2 rounded-full bg-purple-600 inline-block"></span>
-                                        傳說: {legendCount}/5
+                                        傳說: {
+                                            (() => {
+                                                const counts = currentSelections.legend.reduce((acc, name) => {
+                                                    const s = legendSkills.find(sk => sk.name === name);
+                                                    if (!s) return acc;
+                                                    if (s.pvp.includes('商城紫') || s.pve.includes('商城紫')) acc.mall++;
+                                                    else if (s.pvp.includes('血盟紫') || s.pve.includes('血盟紫')) acc.clan++;
+                                                    else acc.reg++;
+                                                    return acc;
+                                                }, { reg: 0, mall: 0, clan: 0 });
+                                                return (
+                                                    <span className="flex gap-2">
+                                                        <span className={counts.reg >= 5 ? 'text-purple-600' : ''}>{counts.reg}/5</span>
+                                                        <span className="text-slate-300">|</span>
+                                                        <span className={counts.mall >= 1 ? 'text-fuchsia-600' : ''}>商城紫: {counts.mall}/1</span>
+                                                        <span className="text-slate-300">|</span>
+                                                        <span className={counts.clan >= 1 ? 'text-indigo-600' : ''}>血盟紫: {counts.clan}/1</span>
+                                                    </span>
+                                                );
+                                            })()
+                                        }
                                     </div>
                                 </div>
                                 <button
