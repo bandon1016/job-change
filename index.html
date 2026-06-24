@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>天堂M轉職建議白皮書</title>
+    <link rel="icon" href="data:,">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -37,7 +38,7 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="text/plain" id="app-code">
         const { useState, useEffect } = React;
 
         // --- 內嵌圖示元件 ---
@@ -198,6 +199,12 @@
         // --- 資料定義 (移至組件外以便初始化存取) ---
 
         // 轉職技能建議表資料
+        const TOOL_LINKS = [
+            { name: "助手備份工具", href: "https://lmcopy.bandonplay.net/" },
+            { name: "手遊聯防警報系統", href: "https://lmnotify.bandonplay.net/" },
+            { name: "OTiny帳務幫手", href: "https://otiny.bandonplay.net/" }
+        ];
+
         const transferData = {
             gunner: [
                 // 英雄技能 (LV優先)
@@ -1012,6 +1019,22 @@
                                 <span>經驗合併計算機</span>
                                 <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-400 ml-1" />
                             </a>
+
+                            {TOOL_LINKS.map((tool) => (
+                                <a
+                                    key={tool.name}
+                                    href={tool.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 px-6 py-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5 transition-all text-slate-700 font-bold group"
+                                >
+                                    <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 text-indigo-600 transition-colors">
+                                        <ExternalLink className="w-5 h-5" />
+                                    </div>
+                                    <span>{tool.name}</span>
+                                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-indigo-400 ml-1" />
+                                </a>
+                            ))}
                         </div>
 
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1098,6 +1121,18 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<SkillInfoApp />);
+    </script>
+    <script>
+        const appCode = document.getElementById("app-code").textContent;
+        const transformed = Babel.transform(appCode, {
+            presets: [
+                ["env", { modules: "commonjs" }],
+                ["react", { runtime: "classic" }]
+            ]
+        }).code;
+        const executable = document.createElement("script");
+        executable.textContent = transformed;
+        document.body.appendChild(executable);
     </script>
 </body>
 
