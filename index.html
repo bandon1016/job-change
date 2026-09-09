@@ -587,15 +587,30 @@
             ]
             ,
             dragonfighter: [
-                // 2026 龍鬥士限時名譽幣技能
-                { name: '鎖鏈火焰：衝擊', rank: '英雄', method: '限時180W', pvp: '買/轉職X', pve: '買/轉職X', bookBox: '英雄技能書箱' },
-                { name: '屠宰者：強化', rank: '英雄', method: '限時180W', pvp: '', pve: '', bookBox: '英雄技能書箱' },
-                { name: '龍之鎧甲：衝擊', rank: '英雄', method: '限時180W', pvp: '', pve: '', bookBox: '英雄技能書箱' },
+                // 英雄技能
+                { name: '龍之盾', rank: '英雄', method: '700,000', pvp: '', pve: '' },
+                { name: '強化：護衛毀滅', rank: '英雄', method: '700,000', pvp: '', pve: '' },
+                { name: '龍之精通：強化', rank: '英雄', method: '1,000,000', pvp: '', pve: '' },
+                { name: '龍之鎧甲(衝擊)', rank: '英雄', method: '限時180W', pvp: '', pve: '', bookBox: '英雄技能書箱' },
+                { name: '屠宰者(強化)', rank: '英雄', method: '限時180W', pvp: '', pve: '', bookBox: '英雄技能書箱' },
+                { name: '恐懼無助', rank: '英雄', method: '', pvp: '', pve: '' },
                 { name: '鎖鏈劍精通', rank: '英雄', method: '限時180W', pvp: '', pve: '', bookBox: '英雄技能書箱' },
-                { name: '鎖鏈劍精通：衝擊', rank: '傳說', method: '限時300W(I)', pvp: '', pve: '', bookBox: '傳說技能書箱 I' },
-                { name: '奪命之雷：衝擊', rank: '傳說', method: '限時300W(I)', pvp: '', pve: '', bookBox: '傳說技能書箱 I' },
+                { name: '反射保護罩', rank: '英雄', method: '', pvp: '', pve: '' },
+                { name: '連鎖火焰(衝擊)', rank: '英雄', method: '限時180W', pvp: '買/轉職X', pve: '買/轉職X', bookBox: '英雄技能書箱' },
+                // 傳說技能
+                { name: '龍之力', rank: '傳說', method: '2,000,000', pvp: '', pve: '' },
+                { name: '熱血沸騰', rank: '傳說', method: '2,000,000', pvp: '', pve: '' },
+                { name: '龍之衝擊', rank: '傳說', method: '', pvp: '', pve: '' },
+                { name: '強化：奪命之雷', rank: '傳說', method: '限時300W(I)', pvp: '', pve: '', bookBox: '傳說技能書箱 I' },
+                { name: '強化：恐懼無助', rank: '傳說', method: '限時300W(II)', pvp: '', pve: '', bookBox: '傳說技能書箱 II' },
                 { name: '迴避', rank: '傳說', method: '限時300W(II)', pvp: '買/轉職X', pve: '買/轉職X', bookBox: '傳說技能書箱 II' },
-                { name: '恐懼無助：衝擊', rank: '傳說', method: '限時300W(II)', pvp: '', pve: '', bookBox: '傳說技能書箱 II' },
+                { name: '鎖鏈劍精通（衝擊）', rank: '傳說', method: '限時300W(I)', pvp: '', pve: '', bookBox: '傳說技能書箱 I' },
+                // 獨特紫技
+                { name: '奧拉奇亞 / 原：龍之精通:致命', rank: '傳說', method: '', pvp: '商城紫', pve: '商城紫' },
+                { name: '哈爾巴斯', rank: '傳說', method: '8,000,000', pvp: '血盟紫', pve: '血盟紫' },
+                // 神話技能
+                { name: '氣息衝擊', rank: '神話', method: '', pvp: '', pve: '' },
+                { name: '阿修羅', rank: '神話', method: '', pvp: '', pve: '' },
             ],
             elf: {
                 defaultMode: 'ranged',
@@ -681,9 +696,9 @@
                 legend2: ['神聖保護(預言)', '神聖追趕者(預言)']
             },
             dragonfighter: {
-                hero: ['鎖鏈火焰：衝擊', '屠宰者：強化', '龍之鎧甲：衝擊', '鎖鏈劍精通'],
-                legend1: ['鎖鏈劍精通：衝擊', '奪命之雷：衝擊'],
-                legend2: ['迴避', '恐懼無助：衝擊']
+                hero: ['連鎖火焰(衝擊)', '屠宰者(強化)', '龍之鎧甲(衝擊)', '鎖鏈劍精通'],
+                legend1: ['鎖鏈劍精通（衝擊）', '強化：奪命之雷'],
+                legend2: ['迴避', '強化：恐懼無助']
             },
             elf: {
                 ranged: {
@@ -1302,9 +1317,14 @@
                 // Split data
                 const heroSkills = data.filter(d => d.rank === '英雄');
                 const allLegendSkills = data.filter(d => d.rank === '傳說');
-                const uniqueLegendSkillNames = classId === 'elf' ? ['精靈之翼靴', '不死鳥'] : [];
+                const uniqueLegendSkillNames = classId === 'elf'
+                    ? ['精靈之翼靴', '不死鳥']
+                    : classId === 'dragonfighter'
+                        ? ['奧拉奇亞 / 原：龍之精通:致命', '哈爾巴斯']
+                        : [];
                 const uniqueLegendSkills = allLegendSkills.filter(d => uniqueLegendSkillNames.includes(d.name));
                 const legendSkills = allLegendSkills.filter(d => !uniqueLegendSkillNames.includes(d.name));
+                const mythicSkills = data.filter(d => d.rank === '神話');
                 const heroTotal = heroSkills.length;
                 const legendTotal = legendSkills.length;
                 const mallUniqueTotal = uniqueLegendSkills.filter(d => d.pvp.includes('商城紫') || d.pve.includes('商城紫')).length;
@@ -1339,9 +1359,14 @@
 
                 const renderSkillRow = (row) => {
                     const rankColor = row.rank === '英雄' ? 'text-red-600' :
-                        row.rank === '傳說' ? 'text-purple-600' : 'text-slate-900';
+                        row.rank === '傳說' ? 'text-purple-600' :
+                            row.rank === '神話' ? 'text-amber-700' : 'text-slate-900';
 
-                    const selectionList = row.rank === '英雄' ? currentSelections.hero : currentSelections.legend;
+                    const selectionList = row.rank === '英雄'
+                        ? currentSelections.hero
+                        : row.rank === '傳說'
+                            ? currentSelections.legend
+                            : [];
                     const isSelected = selectionList.includes(row.name);
                     const skillDescription = getSkillDescription(classId, row.name);
                     const isPreferredElementMatch = currentPreferredElements.includes(row.element);
@@ -1351,7 +1376,8 @@
                     const selectionOrder = isSelected && !isUniqueLegendSkill ? selectionList.indexOf(row.name) + 1 : null;
 
                     // 檢查是否標示為轉職X
-                    const isTransferDisabled = (row.pvp && row.pvp.includes('X')) || (row.pve && row.pve.includes('X'));
+                    const isTransferDisabled = !['英雄', '傳說'].includes(row.rank) ||
+                        (row.pvp && row.pvp.includes('X')) || (row.pve && row.pve.includes('X'));
 
                     let rowBgClass = '';
                     if (isSelected) {
@@ -1363,6 +1389,8 @@
                             rowBgClass = 'bg-red-50/20 hover:bg-red-100/50';
                         } else if (row.rank === '傳說') {
                             rowBgClass = 'bg-purple-50/20 hover:bg-purple-100/50';
+                        } else if (row.rank === '神話') {
+                            rowBgClass = 'bg-amber-50/20 hover:bg-amber-100/50';
                         } else {
                             rowBgClass = 'hover:bg-slate-50';
                         }
@@ -1429,6 +1457,7 @@
                             <td className="px-6 py-3">
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-sm ${row.rank === '英雄' ? 'bg-red-50 text-red-700 border-red-200' :
                                     row.rank === '傳說' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                        row.rank === '神話' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                         'bg-slate-100 text-slate-600 border-slate-200'
                                     }`}>
                                     {row.rank}
@@ -1680,6 +1709,16 @@
                                                     </div>
                                                 </td>
                                             </tr>
+                                        </>
+                                    )}
+                                    {mythicSkills.length > 0 && (
+                                        <>
+                                            <tr className="bg-amber-50/60 border-t-4 border-slate-100">
+                                                <td colSpan="7" className="px-6 py-2 text-xs font-bold text-amber-800 tracking-widest border-b border-amber-100">
+                                                    ▼ 神話級技能 (Mythic Rank)
+                                                </td>
+                                            </tr>
+                                            {mythicSkills.map(renderSkillRow)}
                                         </>
                                     )}
                                 </tbody>
