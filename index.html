@@ -1283,6 +1283,29 @@
                 return isNaN(num) ? 0 : num;
             };
 
+            const getLegendRemainingCoins = (classId, skills, selectedSkillNames) => {
+                if (classId !== 'dragonfighter') {
+                    return skills.reduce((total, row) =>
+                        !selectedSkillNames.includes(row.name) ? total + parseMethodToCoins(row.method) : total, 0);
+                }
+
+                const limitedGroups = ['限時300W(I)', '限時300W(II)'];
+                const limitedSkillNames = new Set(
+                    skills.filter(row => limitedGroups.some(group => row.method.includes(group))).map(row => row.name)
+                );
+                const regularTotal = skills.reduce((total, row) => {
+                    if (limitedSkillNames.has(row.name) || selectedSkillNames.includes(row.name)) return total;
+                    return total + parseMethodToCoins(row.method);
+                }, 0);
+                const limitedTotal = limitedGroups.reduce((total, group) => {
+                    const groupSkills = skills.filter(row => row.method.includes(group));
+                    const hasSelectedSkill = groupSkills.some(row => selectedSkillNames.includes(row.name));
+                    return total + (hasSelectedSkill ? 0 : groupSkills.length ? 3000000 : 0);
+                }, 0);
+
+                return regularTotal + limitedTotal;
+            };
+
             const formatNumber = (num) => {
                 return num.toLocaleString();
             };
@@ -1682,11 +1705,11 @@
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                 <div className="flex items-center gap-2 text-slate-800 font-black text-lg">
                                                     <div className="p-1 px-2 bg-indigo-600 text-white rounded text-sm font-bold">小計</div>
-                                                    距離滿技能，您還要準備 <span className="text-purple-700 text-2xl mx-1">{formatNumber(legendSkills.reduce((acc, row) => !currentSelections.legend.includes(row.name) ? acc + parseMethodToCoins(row.method) : acc, 0))}</span> 名譽幣
+                                                    距離滿技能，您還要準備 <span className="text-purple-700 text-2xl mx-1">{formatNumber(getLegendRemainingCoins(classId, legendSkills, currentSelections.legend))}</span> 名譽幣
                                                 </div>
                                                 <div className="text-sm font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 flex items-center gap-2">
                                                     <Info className="w-4 h-4 text-indigo-400" />
-                                                    限時300W技能需先買完 (I) 才可買 (II)。
+                                                    {classId === 'dragonfighter' ? '限時300W(I)、(II)技能各限購1個。' : '限時300W技能需先買完 (I) 才可買 (II)。'}
                                                 </div>
                                             </div>
                                         </td>
