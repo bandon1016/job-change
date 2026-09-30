@@ -793,7 +793,8 @@
                 gradient: 'from-red-700 to-orange-700',
                 lightGradient: 'from-red-50 to-orange-50',
                 badgeColor: 'bg-red-100 text-red-800 border-red-200',
-                hoverBorder: 'hover:border-red-300'
+                hoverBorder: 'hover:border-red-300',
+                videoUrl: 'https://youtu.be/HvVk9UUwxhU'
             },
             {
                 id: 'elf',
@@ -892,11 +893,91 @@
             return { hero: heroSkills, legend: legendSkills };
         };
 
+        const readSharedSelection = () => {
+            if (typeof window === 'undefined') return null;
+
+            try {
+                const rawShare = new URLSearchParams(window.location.search).get('share');
+                if (!rawShare) return null;
+
+                const share = JSON.parse(rawShare);
+                const classConfig = classesConfig.find(config => config.id === share.c);
+                if (share.v !== 1 || !classConfig) return null;
+
+                const modeId = classConfig.modes?.some(mode => mode.id === share.m)
+                    ? share.m
+                    : getDefaultClassMode(classConfig.id);
+                const rows = getTransferRows(classConfig.id, modeId);
+                const selectValidSkills = (names, rank) => Array.isArray(names)
+                    ? [...new Set(names.filter(name => typeof name === 'string' && rows.some(row => row.name === name && row.rank === rank)))]
+                    : [];
+
+                return {
+                    classId: classConfig.id,
+                    modeId,
+                    orientation: ['pvp', 'pve'].includes(share.o) ? share.o : null,
+                    selections: {
+                        hero: selectValidSkills(share.h, '英雄'),
+                        legend: selectValidSkills(share.l, '傳說')
+                    },
+                    preferredElements: Array.isArray(share.e)
+                        ? [...new Set(share.e.filter(element => PREFERENCE_ELEMENT_OPTIONS.includes(element)))].slice(0, 2)
+                        : []
+                };
+            } catch (error) {
+                return null;
+            }
+        };
+
+        const CopyLink = (props) => (
+            <Icon {...props}>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </Icon>
+        );
+
+        const copyTextToClipboard = async (text) => {
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+            } catch (error) {
+                // Fall back to the selection API when clipboard access is denied.
+            }
+
+            const input = document.createElement('textarea');
+            input.value = text;
+            input.setAttribute('readonly', '');
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            const copied = document.execCommand('copy');
+            input.remove();
+            if (!copied) throw new Error('Clipboard copy failed');
+        };
+
+        const getYoutubeVideoId = (videoUrl) => {
+            try {
+                const url = new URL(videoUrl);
+                const videoId = url.hostname === 'youtu.be'
+                    ? url.pathname.split('/').filter(Boolean)[0]
+                    : url.searchParams.get('v');
+                return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId) ? videoId : null;
+            } catch (error) {
+                return null;
+            }
+        };
+
         // --- 主應用程式 ---
 
         const SkillInfoApp = () => {
+            const sharedSelection = readSharedSelection();
             const getPageFromLocation = () => {
                 if (typeof window === 'undefined') return 'home';
+                const currentShare = readSharedSelection();
+                if (currentShare) return currentShare.classId;
                 const requestedClass = new URLSearchParams(window.location.search).get('class');
                 return classesConfig.some(config => config.id === requestedClass) ? requestedClass : 'home';
             };
@@ -905,6 +986,7 @@
             const getPageUrl = (classId) => {
                 const url = new URL(window.location.href);
                 url.hash = '';
+                url.searchParams.delete('share');
                 if (classId === 'home') url.searchParams.delete('class');
                 else url.searchParams.set('class', classId);
                 return `${url.pathname}${url.search}`;
@@ -947,13 +1029,24 @@
                     }
                 });
 
+                if (sharedSelection) {
+                    const { classId, modeId, selections: sharedSkills } = sharedSelection;
+                    if (modeId) {
+                        initial[classId] = { ...(initial[classId] || {}), [modeId]: sharedSkills };
+                    } else {
+                        initial[classId] = sharedSkills;
+                    }
+                }
+
                 return initial;
             };
 
             const getInitialModes = () => {
                 return classesConfig.reduce((acc, config) => {
                     if (config.modes) {
-                        acc[config.id] = getDefaultClassMode(config.id);
+                        acc[config.id] = sharedSelection?.classId === config.id
+                            ? sharedSelection.modeId
+                            : getDefaultClassMode(config.id);
                     }
                     return acc;
                 }, {});
@@ -962,11 +1055,20 @@
             // 記錄使用者選擇的技能，預設值來自 upgraded 技能
             const [selections, setSelections] = useState(getInitialSelections);
             const [classModes, setClassModes] = useState(getInitialModes);
-            const [preferredElements, setPreferredElements] = useState({});
+            const [preferredElements, setPreferredElements] = useState(() => (
+                sharedSelection ? { [sharedSelection.classId]: sharedSelection.preferredElements } : {}
+            ));
             const [hoveredSkillInfo, setHoveredSkillInfo] = useState(null);
             const [activeSkillInfo, setActiveSkillInfo] = useState(null);
             const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
             const [showRotateHint, setShowRotateHint] = useState(true);
+            const [shareLinkCopied, setShareLinkCopied] = useState(false);
+            const [shareLinkCopyFailed, setShareLinkCopyFailed] = useState(false);
+            const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(() => (
+                typeof window !== 'undefined' &&
+                window.matchMedia('(min-width: 1600px)').matches &&
+                Boolean(classesConfig.find(config => config.id === activeTab)?.videoUrl)
+            ));
             const [isSubscribeExpanded, setIsSubscribeExpanded] = useState(() => {
                 if (typeof window === 'undefined') return true;
 
@@ -1036,16 +1138,51 @@
 
             // 記錄各職業當前選擇的取向 (pvp/pve/null)
             const [orientations, setOrientations] = useState(() => {
-                return classesConfig.reduce((acc, config) => {
+                const initial = classesConfig.reduce((acc, config) => {
                     acc[config.id] = null;
                     return acc;
                 }, {});
+                if (sharedSelection) initial[sharedSelection.classId] = sharedSelection.orientation;
+                return initial;
             });
+
+            const handleCopyShareLink = async (classId) => {
+                const currentSelections = getCurrentSelections(classId);
+                const payload = {
+                    v: 1,
+                    c: classId,
+                    m: getActiveMode(classId),
+                    o: orientations[classId] || null,
+                    h: currentSelections.hero,
+                    l: currentSelections.legend,
+                    e: getPreferredElements(classId)
+                };
+                const shareUrl = new URL(window.location.href);
+                shareUrl.hash = '';
+                shareUrl.search = '';
+                shareUrl.searchParams.set('class', classId);
+                shareUrl.searchParams.set('share', JSON.stringify(payload));
+
+                try {
+                    await copyTextToClipboard(shareUrl.toString());
+                    setShareLinkCopied(true);
+                    setShareLinkCopyFailed(false);
+                    window.setTimeout(() => setShareLinkCopied(false), 2200);
+                } catch (error) {
+                    setShareLinkCopied(false);
+                    setShareLinkCopyFailed(true);
+                    window.setTimeout(() => setShareLinkCopyFailed(false), 2800);
+                }
+            };
 
             useEffect(() => {
                 setHoveredSkillInfo(null);
                 setActiveSkillInfo(null);
                 setIsToolsMenuOpen(false);
+                const activeClass = classesConfig.find(config => config.id === activeTab);
+                setIsVideoPlayerOpen(
+                    window.matchMedia('(min-width: 1600px)').matches && Boolean(activeClass?.videoUrl)
+                );
             }, [activeTab]);
 
             useEffect(() => {
@@ -1572,18 +1709,18 @@
                                         </div>
                                         <h3 className={`transfer-summary-title text-xl font-bold ${classConfig.color}`}>轉職技能建議表</h3>
 
-                                        {classConfig.videoUrl && (
-                                            <a
-                                                href={classConfig.videoUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="transfer-video-button flex items-center gap-1 text-sm font-bold text-red-500 hover:text-red-700 transition-colors ml-2 bg-white px-2 py-0.5 rounded-md border border-red-100 shadow-sm"
-                                                aria-label="觀看攻略影片"
-                                            >
-                                                <Youtube className="w-4 h-4" />
-                                                <span className="transfer-video-label">觀看攻略影片</span>
-                                            </a>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopyShareLink(classId)}
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs font-bold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            aria-label={shareLinkCopied ? '分享連結已複製' : shareLinkCopyFailed ? '複製失敗' : '複製目前職業與技能選擇的分享連結'}
+                                            title={shareLinkCopied ? '分享連結已複製' : shareLinkCopyFailed ? '複製失敗，請確認瀏覽器剪貼簿權限' : '複製目前職業與技能選擇的分享連結'}
+                                        >
+                                            {shareLinkCopied ? <CheckSquare className="h-4 w-4" /> : shareLinkCopyFailed ? <X className="h-4 w-4" /> : <CopyLink className="h-4 w-4" />}
+                                            <span className="hidden sm:inline" aria-live="polite">
+                                                {shareLinkCopied ? '已複製' : shareLinkCopyFailed ? '複製失敗' : '分享選擇'}
+                                            </span>
+                                        </button>
                                     </div>
                                     <p className="transfer-summary-subtitle text-xs text-slate-500 ml-1">※ 可勾選下方技能進行試算</p>
                                 </div>
@@ -1856,8 +1993,11 @@
                 );
             };
 
+            const activeVideoClass = classesConfig.find(config => config.id === activeTab && config.videoUrl);
+            const activeVideoId = activeVideoClass ? getYoutubeVideoId(activeVideoClass.videoUrl) : null;
+
             return (
-                <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-8 font-sans">
+                <div className={`min-h-screen bg-slate-50 text-slate-800 p-4 md:p-8 font-sans ${activeTab !== 'home' && classesConfig.find(config => config.id === activeTab)?.videoUrl ? 'min-[1600px]:pr-[400px]' : ''}`}>
                     {hoveredSkillInfo && (
                         <div
                             className="fixed z-[60] pointer-events-none w-[360px] max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-4 shadow-2xl ring-1 ring-slate-900/5"
@@ -2135,6 +2275,60 @@
 
                         <div className="h-20" aria-hidden="true"></div>
                     </div>
+
+                    {activeVideoClass && activeVideoId && (
+                        <>
+                            {isVideoPlayerOpen && (
+                                <div
+                                    className="fixed inset-0 z-[68] bg-slate-950/50 min-[1600px]:hidden"
+                                    onClick={() => setIsVideoPlayerOpen(false)}
+                                    aria-hidden="true"
+                                />
+                            )}
+
+                            {isVideoPlayerOpen ? (
+                                <section className="fixed bottom-24 right-4 z-[70] w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl min-[1600px]:bottom-auto min-[1600px]:right-4 min-[1600px]:top-1/2 min-[1600px]:w-[360px] min-[1600px]:-translate-y-1/2" aria-label={`${activeVideoClass.name}攻略影片播放器`}>
+                                    <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-3 py-2.5">
+                                        <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-slate-800">
+                                            <Youtube className="h-4 w-4 shrink-0 text-red-600" />
+                                            <span className="truncate">{activeVideoClass.name}攻略影片</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsVideoPlayerOpen(false)}
+                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                            aria-label="收合攻略影片"
+                                            title="收合攻略影片"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <div className="aspect-video bg-black">
+                                        <iframe
+                                            className="h-full w-full"
+                                            src={`https://www.youtube-nocookie.com/embed/${activeVideoId}?rel=0`}
+                                            title={`${activeVideoClass.name}轉職攻略影片`}
+                                            loading="lazy"
+                                            referrerPolicy="strict-origin-when-cross-origin"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowFullScreen
+                                        />
+                                    </div>
+                                </section>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsVideoPlayerOpen(true)}
+                                    className="fixed bottom-40 right-4 z-[70] inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-700 bg-red-600 px-3.5 py-2.5 text-sm font-bold text-white shadow-lg transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-300 min-[1600px]:bottom-auto min-[1600px]:right-4 min-[1600px]:top-1/2 min-[1600px]:-translate-y-1/2"
+                                    aria-label={`播放${activeVideoClass.name}攻略影片`}
+                                    title={`播放${activeVideoClass.name}攻略影片`}
+                                >
+                                    <Youtube className="h-5 w-5" />
+                                    <span>觀看攻略影片</span>
+                                </button>
+                            )}
+                        </>
+                    )}
 
                     <div
                         className="fixed z-[65] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-2"
