@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M轉職建議白皮書</title>
+    <title>天堂M全職業轉職技能推薦 白皮書</title>
+    <meta name="description" content="天堂M全職業轉職技能推薦白皮書，整理各職業英雄、傳說等級技能、PVP/PVE取向與轉職建議。">
+    <meta property="og:title" content="天堂M全職業轉職技能推薦 白皮書">
+    <meta property="og:description" content="整理天堂M各職業英雄、傳說技能與PVP/PVE轉職推薦。">
     <link rel="icon" href="data:,">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -892,7 +895,40 @@
         // --- 主應用程式 ---
 
         const SkillInfoApp = () => {
-            const [activeTab, setActiveTab] = useState('home');
+            const getPageFromLocation = () => {
+                if (typeof window === 'undefined') return 'home';
+                const requestedClass = new URLSearchParams(window.location.search).get('class');
+                return classesConfig.some(config => config.id === requestedClass) ? requestedClass : 'home';
+            };
+            const [activeTab, setActiveTab] = useState(getPageFromLocation);
+
+            const getPageUrl = (classId) => {
+                const url = new URL(window.location.href);
+                url.hash = '';
+                if (classId === 'home') url.searchParams.delete('class');
+                else url.searchParams.set('class', classId);
+                return `${url.pathname}${url.search}`;
+            };
+
+            const navigateToPage = (event, pageId) => {
+                if (event) {
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                }
+                const nextUrl = getPageUrl(pageId);
+                if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+                    window.history.pushState({ pageId }, '', nextUrl);
+                }
+                setActiveTab(pageId);
+                setIsToolsMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'auto' });
+            };
+
+            useEffect(() => {
+                const handlePopState = () => setActiveTab(getPageFromLocation());
+                window.addEventListener('popstate', handlePopState);
+                return () => window.removeEventListener('popstate', handlePopState);
+            }, []);
 
             // 根據 upgraded 屬性計算初始選擇狀態
             const getInitialSelections = () => {
@@ -1013,22 +1049,36 @@
             }, [activeTab]);
 
             useEffect(() => {
-                if (typeof window === 'undefined' || typeof window.gtag !== 'function') return;
-
                 const activeClass = classesConfig.find(config => config.id === activeTab);
-                const virtualRoute = activeClass ? `#/class/${activeClass.id}` : '#/home';
                 const pageTitle = activeClass
-                    ? `${activeClass.name}轉職建議 | 天堂M轉職建議白皮書`
-                    : '首頁 | 天堂M轉職建議白皮書';
-                const pagePath = `${window.location.pathname}${virtualRoute}`;
-                const pageLocation = `${window.location.href.split('#')[0]}${virtualRoute}`;
+                    ? `天堂M${activeClass.name}轉職技能推薦 | 天堂M全職業轉職技能推薦 白皮書`
+                    : '天堂M全職業轉職技能推薦 白皮書';
+                const pageDescription = activeClass
+                    ? `查看天堂M${activeClass.name}英雄與傳說技能資料、技能屬性、PVP/PVE取向及轉職技能推薦順序。`
+                    : '天堂M全職業轉職技能推薦白皮書，整理各職業英雄、傳說等級技能、PVP/PVE取向與轉職建議。';
+                const pageUrl = `${window.location.origin}${getPageUrl(activeClass ? activeClass.id : 'home')}`;
 
                 document.title = pageTitle;
+                const descriptionTag = document.querySelector('meta[name="description"]');
+                if (descriptionTag) descriptionTag.setAttribute('content', pageDescription);
+                const ogTitleTag = document.querySelector('meta[property="og:title"]');
+                if (ogTitleTag) ogTitleTag.setAttribute('content', pageTitle);
+                const ogDescriptionTag = document.querySelector('meta[property="og:description"]');
+                if (ogDescriptionTag) ogDescriptionTag.setAttribute('content', pageDescription);
+                let canonicalTag = document.querySelector('link[rel="canonical"]');
+                if (!canonicalTag) {
+                    canonicalTag = document.createElement('link');
+                    canonicalTag.rel = 'canonical';
+                    document.head.appendChild(canonicalTag);
+                }
+                canonicalTag.href = pageUrl;
+
+                if (typeof window.gtag !== 'function') return;
                 window.gtag('event', 'page_view', {
                     send_to: 'G-ZF8WGFTXMB',
                     page_title: pageTitle,
-                    page_location: pageLocation,
-                    page_path: pagePath,
+                    page_location: pageUrl,
+                    page_path: `${window.location.pathname}${getPageUrl(activeClass ? activeClass.id : 'home').replace(window.location.pathname, '')}`,
                     page_type: activeClass ? 'job_class' : 'home',
                     job_class_id: activeClass ? activeClass.id : 'home',
                     job_class_name: activeClass ? activeClass.name : '首頁'
@@ -1889,13 +1939,13 @@
 
                         <div className="text-center space-y-3 mb-8">
                             <h1 className="text-3xl md:text-5xl font-black tracking-tight text-slate-800">
-                                天堂M <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-700">改版轉職建議白皮書</span>
+                                {activeTab === 'home' ? '天堂M全職業轉職技能推薦 白皮書' : `天堂M${classesConfig.find(config => config.id === activeTab)?.name || ''}轉職技能推薦`}
                             </h1>
                             <div className="flex flex-col items-center gap-2">
                                 <p className="text-slate-500 text-sm md:text-base font-bold tracking-widest uppercase flex items-center gap-3">
                                     名譽幣限時技能與轉職技能建議
                                     <span className="px-2 py-0.5 bg-slate-100 text-slate-400 text-[10px] font-bold rounded border border-slate-200 tracking-normal normal-case">
-                                        V.20260709
+                                        V.20260930
                                     </span>
                                 </p>
                             </div>
@@ -1909,12 +1959,9 @@
                         </div>
 
                         <div className="relative flex flex-wrap justify-center gap-2 mb-8 bg-white/90 p-2 rounded-xl shadow-sm border border-slate-200/60 max-w-fit mx-auto">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setActiveTab('home');
-                                    setIsToolsMenuOpen(false);
-                                }}
+                            <a
+                                href={getPageUrl('home')}
+                                onClick={event => navigateToPage(event, 'home')}
                                 className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'home'
                                     ? 'bg-slate-800 text-white shadow-md'
                                     : 'bg-transparent text-slate-600 hover:bg-slate-100'
@@ -1922,18 +1969,15 @@
                             >
                                 <Home className="w-4 h-4" />
                                 首頁
-                            </button>
+                            </a>
 
                             <div className="w-px h-6 bg-slate-200 mx-1 self-center hidden md:block"></div>
 
                             {classesConfig.map(cls => (
-                                <button
+                                <a
                                     key={cls.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setActiveTab(cls.id);
-                                        setIsToolsMenuOpen(false);
-                                    }}
+                                    href={getPageUrl(cls.id)}
+                                    onClick={event => navigateToPage(event, cls.id)}
                                     className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === cls.id
                                         ? `bg-gradient-to-r ${cls.gradient} text-white shadow-md`
                                         : `bg-transparent text-slate-600 hover:bg-slate-100`
@@ -1941,7 +1985,7 @@
                                 >
                                     {cls.icon}
                                     {cls.name}
-                                </button>
+                                </a>
                             ))}
 
                             <div className="w-px h-6 bg-slate-200 mx-1 self-center hidden md:block"></div>
@@ -2000,22 +2044,23 @@
                                     <div className="max-w-4xl mx-auto mb-8 bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm">
                                         <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
                                             <Info className="w-5 h-5 text-indigo-600" />
-                                            20260709更新內容：
+                                            20260930更新內容：
                                         </h3>
                                         <ul className="space-y-3 text-slate-600 text-sm font-medium">
                                             <li className="flex items-start gap-2">
                                                 <span className="text-indigo-500 mt-0.5 font-bold">1.</span>
-                                                <span>新增 妖精 技能轉職建議</span>
+                                                <span>新增 龍鬥士 轉職技能建議</span>
                                             </li>
                                         </ul>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                                         {getAllClasses().map((config) => (
-                                            <div
+                                            <a
                                                 key={config.id}
-                                                onClick={() => setActiveTab(config.id)}
-                                                className={`group cursor-pointer bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden ${config.hoverBorder}`}
+                                                href={getPageUrl(config.id)}
+                                                onClick={event => navigateToPage(event, config.id)}
+                                                className={`group block cursor-pointer bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden ${config.hoverBorder}`}
                                             >
                                                 <div className={`h-24 bg-gradient-to-br ${config.lightGradient} relative flex justify-center items-center border-b border-slate-100`}>
                                                     <div className={`p-3 bg-white rounded-xl shadow-md ${config.color} ring-1 ring-slate-900/5`}>
@@ -2057,7 +2102,7 @@
                                                         查看詳情 <ChevronRight className="w-5 h-5" />
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </a>
                                         ))}
                                     </div>
                                 </>
